@@ -189,8 +189,8 @@ write.csv(unique_expr_symbols, "ds_expr_uni/ds_1_uniq.csv", row.names = TRUE)
 df_c_d <- data.frame(matrix(ncol = 3, nrow = 42))
 colnames(df_c_d) <- c("DataSet", "Diseases","Control")
 
-## for (nset in 1:length(geo2kegg)){
-for (nset in 1:2){
+for (nset in 1:length(geo2kegg)){
+##for (nset in 1:2){
   ## controles / diseases
   dataset_tmp = geo2kegg[[nset]]
   c_d_data = dataset_tmp@phenoData@data
