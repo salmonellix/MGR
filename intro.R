@@ -4,7 +4,7 @@ install.packages("devtools")
 library(devtools)
 install_github("rcastelo/GSVA")
 
-
+options(connectionObserver = NULL)
 
 
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -17,7 +17,7 @@ BiocManager::install("GSVA", version = "devel")
 BiocManager::install("AnnotationDbi")
 BiocManager::install("hgu133a.db")
 BiocManager::install("hgu133plus2.db")
-BiocManager::install("GSVA")
+BiocManager::install("GSVA", update = TRUE)
 BiocManager::install("GSEABase")
 BiocManager::install("EnrichmentBrowser")
 BiocManager::install("KEGGREST")
@@ -35,10 +35,17 @@ library("EnrichmentBrowser")
 library("GSVA")
 library("GSEABase")
 library("AnnotationDbi")
+library("org.Hs.eg.db")
 library("hgu133a.db")    ##for Human
 library("hgu133plus2.db")
 library("plyr")
-library("org.Hs.eg.db")
+
+
+
+
+library(limma)
+
+loadNamespace('org.Hs.eg.db') 
 
 library("BiocParallel")
 library('data.table')
@@ -46,7 +53,18 @@ library("dplyr")
 
 setwd('C:/Users/zelda/mgr')
 
+# try new implementations from gsva_modified instead of gsva
 
+
+BiocManager::install("HDF5Array")
+BiocManager::install("SingleCellExperiment")
+BiocManager::install("SummarizedExperiment")
+BiocManager::install("mlr")
+library("HDF5Array")
+library("SingleCellExperiment")
+library("SummarizedExperiment")
+library("mlr")
+source('MGR/gsva_modified.R')
 
 
 ## load data
@@ -292,6 +310,7 @@ for (i in 1:length(genSets_file$has)){
 
 
 
+
 ## get enterez name for each gse
 test_OUT <- select(hgu133a.db,rownames(test), columns=c("SYMBOL", "ENTREZID", "GENENAME"))
 ## remove duplication of enterez 
@@ -302,14 +321,14 @@ row.names(test) <- gsub("[a-zA-Z ]", "",  row.names(test))
 .rowNamesDF(test, make.names=FALSE) <- test_OUT_uni$ENTREZID
 test =  data.matrix(test)
 write.csv(test, "test.csv", row.names = TRUE)  
-
-
+write.csv(ds_tmp, "ds_tmp.csv", row.names = TRUE) 
+write.csv(gsc, "gsc.csv", row.names = TRUE) 
 
 ### annotation:  "org.Hs.eg.db" 
 ### run for each method
 
 ## methods_gsva = c( "zscore", "plage")
-methods_gsva = c("zscore")
+methods_gsva = c("plage")
 
 
 for (m in methods_gsva){
@@ -320,22 +339,21 @@ for (m in methods_gsva){
     ds_tmp = read.csv(file_name,check.names=FALSE, row.names=1)
     # main function
     ES_GSVA = gsva(data.matrix(ds_tmp), gsc,
-                   method= "zscore",
-                   kcdf="Gaussian",
+                   method= c("zscore"),
+                   kcdf=c("Gaussian"),
                    abs.ranking=FALSE,
-                   min.sz=2,
+                   min.sz=1,
                    max.sz=Inf, ## all paths even if short
                    parallel.sz=1L,
                    mx.diff=TRUE,
                    ssgsea.norm=TRUE,
-                   verbose=TRUE,
-                   BPPARAM=SnowParam(2, progressbar = FALSE))
+                   verbose=FALSE)
     # write to apropriate folder
-    file_out <- paste("Results/new_res/", m, "/ds", "_",i,"_e.csv", sep="")
+    file_out <- paste("Results/modifications/plage_pca/ds", "_",i,"_e.csv", sep="")
     write.csv(ES_GSVA, file_out, row.names = TRUE)
   }
-  m
 }
+
 
 
 file_name <- paste("Results/ds_expr_enterez2/ds_uniq_42_e.csv", sep="")
