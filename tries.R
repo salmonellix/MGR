@@ -1,10 +1,12 @@
 
 
-BiocManager::install(version = '4.0')
+BiocManager::install(version = '3.12')
 
 BiocManager::install("GSVA", version = "devel")
-BiocManager::install("Seurat")
-
+BiocManager::install("ggplot2")
+require(devtools)
+install_version("ggplot2", version = "0.9.1", repos = "http://cran.us.r-project.org",force = TRUE)
+BiocManager::install("ggplot2", force = TRUE)
 install.packages("remotes")
 library(remotes)
 install_github("salmonellix/GSVA", force=TRUE)
@@ -12,11 +14,17 @@ library("GSVA")
 library("BiocParallel")
 library("BiocSingular")
 
-remotes::install_github("davismcc/scater")
+devtools::install_github(c("hadley/ggplot2", "GuangchuangYu/ggtree"), force = TRUE)
+
+
+remotes::install_github("davismcc/scater",force = TRUE)
+install.packages("devtools")
+devtools::install_github("tidyverse/ggplot2")
+library("ggplot2")
 library("scater")
 library("davismcc/scater")
-
-BiocManager::install("scater")
+install.packages("tidyverse")
+BiocManager::install("scater", force = TRUE)
 install.packages("umap")
 library("umap")
 
@@ -26,7 +34,7 @@ library("dplyr")
 library("tidyr")
 library("Seurat")
 
-methods_gsva = c("zscore")
+methods_gsva = c("plage_pca")
 
 
 
@@ -37,23 +45,23 @@ methods_gsva = c("zscore")
 
 for (m in methods_gsva){
   
-  for (i in 1:length(geo2kegg)){
+  for (i in 28:length(geo2kegg)){
     # read from file expression set: rows - enterezID, cols - genes
     file_name <- paste("Results/ds_expr_enterez2/ds_uniq", "_",i,"_e.csv", sep="")
     ds_tmp = read.csv(file_name,check.names=FALSE, row.names=1)
     # main function
     ES_GSVA = gsva(data.matrix(ds_tmp), gsc,
-                   method= c("zscore"),
+                   method= c("plage_pca"),
                    kcdf=c("Gaussian"),
                    abs.ranking=FALSE,
-                   min.sz=1,
+                   min.sz=2,
                    max.sz=Inf, ## all paths even if short
                    parallel.sz=1L,
                    mx.diff=TRUE,
                    ssgsea.norm=TRUE,
                    verbose=FALSE)
     # write to apropriate folder
-    file_out <- paste("Results/modifications/zscore_fisher//ds", "_",i,"_zf.csv", sep="")
+    file_out <- paste("Results/modifications/plage//ds", "_",i,"_zf.csv", sep="")
     write.csv(ES_GSVA, file_out, row.names = TRUE)
   }
 }
@@ -72,8 +80,94 @@ ES_GSVA_pca = gsva(data.matrix(ds_tmp), gsc,
                ssgsea.norm=TRUE,
                verbose=FALSE)
 
+ES_GSVA_umap = gsva(data.matrix(ds_tmp), gsc,
+                   method= c("plage_umap"),
+                   kcdf=c("Gaussian"),
+                   abs.ranking=FALSE,
+                   min.sz=2,
+                   max.sz=Inf, ## all paths even if short
+                   parallel.sz=1L,
+                   mx.diff=TRUE,
+                   ssgsea.norm=TRUE,
+                   verbose=FALSE)
+
+ES_GSVA_tsne = gsva(data.matrix(ds_tmp), gsc,
+                   method= c("plage_tsne"),
+                   kcdf=c("Gaussian"),
+                   abs.ranking=FALSE,
+                   min.sz=2,
+                   max.sz=Inf, ## all paths even if short
+                   parallel.sz=1L,
+                   mx.diff=TRUE,
+                   ssgsea.norm=TRUE,
+                   verbose=FALSE)
+
+ES_GSVA_zscore = gsva(data.matrix(ds_tmp), gsc,
+                    method= c("zscore"),
+                    kcdf=c("Gaussian"),
+                    abs.ranking=FALSE,
+                    min.sz=2,
+                    max.sz=Inf, ## all paths even if short
+                    parallel.sz=1L,
+                    mx.diff=TRUE,
+                    ssgsea.norm=TRUE,
+                    verbose=FALSE)
+
+ES_GSVA_gsva = gsva(data.matrix(ds_tmp), gsc,
+                      method= c("gsva"),
+                      kcdf=c("Gaussian"),
+                      abs.ranking=FALSE,
+                      min.sz=2,
+                      max.sz=Inf, ## all paths even if short
+                      parallel.sz=1L,
+                      mx.diff=TRUE,
+                      ssgsea.norm=TRUE,
+                      verbose=FALSE)
+
+ES_GSVA_ssgsea = gsva(data.matrix(ds_tmp), gsc,
+                    method= c("ssgsea"),
+                    kcdf=c("Gaussian"),
+                    abs.ranking=FALSE,
+                    min.sz=2,
+                    max.sz=Inf, ## all paths even if short
+                    parallel.sz=1L,
+                    mx.diff=TRUE,
+                    ssgsea.norm=TRUE,
+                    verbose=FALSE)
+
+ES_GSVA_stouffer = gsva(data.matrix(ds_tmp), gsc,
+                      method= c("zscore_stouffer"),
+                      kcdf=c("Gaussian"),
+                      abs.ranking=FALSE,
+                      min.sz=2,
+                      max.sz=Inf, ## all paths even if short
+                      parallel.sz=1L,
+                      mx.diff=TRUE,
+                      ssgsea.norm=TRUE,
+                      verbose=FALSE)
 
 
+ES_GSVA_fisher = gsva(data.matrix(ds_tmp), gsc,
+                        method= c("zscore_fisher"),
+                        kcdf=c("Gaussian"),
+                        abs.ranking=FALSE,
+                        min.sz=2,
+                        max.sz=Inf, ## all paths even if short
+                        parallel.sz=1L,
+                        mx.diff=TRUE,
+                        ssgsea.norm=TRUE,
+                        verbose=FALSE)
+
+ES_GSVA_plage = gsva(data.matrix(ds_tmp), gsc,
+                      method= c("plage"),
+                      kcdf=c("Gaussian"),
+                      abs.ranking=FALSE,
+                      min.sz=2,
+                      max.sz=Inf, ## all paths even if short
+                      parallel.sz=1L,
+                      mx.diff=TRUE,
+                      ssgsea.norm=TRUE,
+                      verbose=FALSE)
 
 pcavectorgset <- function(gSetIdx, Z) {
   if(is(Z, "dgCMatrix")){
@@ -183,7 +277,7 @@ a <- matrix(rnorm(100000), ncol=20)
 pca_out <- BiocSingular::runPCA(a, rank = 30)
 pca_1 = pca_out$rotation[ ,1]
 pca_1_2 = princomp(a)
-pca_new2 = calculatePCA(data.matrix(a), ncomponents = 20,
+pca_new2 = calculatePCA(a, ncomponents = 3,
                         ntop = 500,
                         subset_row = NULL,
                         scale=TRUE,
@@ -196,8 +290,23 @@ svd_1 = svd_out$v[, 1]
 svd_1_2= svd(a)
 
 umap_out <- umap(a)
-tsne = calculateTSNE(a)
-umap = calculateUMAP(a)
+tsne = calculateTSNE(a, ncomponents = 3,
+                     ntop = 500,
+                     subset_row = NULL,
+                     scale=TRUE,
+                     transposed = FALSE,
+                     do.pca = FALSE,
+                     seed = 12345)
+b = Z[gsc, ]
+Z <- Matrix::t(data.matrix(ds_tmp))
+Z <- .dgCapply(Z, scale, 2)
+Z <- Matrix::t(Z)
+
+umap = calculateUMAP(a, ncomponents = 3,
+                     ntop = 500,
+                     subset_row = NULL,
+                     scale=TRUE,
+                     transposed = FALSE)
 
 
 tsne_out <- tsne(a, max_iter = 10, epoch = 10)
@@ -291,4 +400,13 @@ if(is(X, "dgCMatrix")){
   colnames(es) <- colnames(X)
 }
 
-es
+
+#### compare methods
+
+
+gsva_pval = t.test()
+
+
+
+
+

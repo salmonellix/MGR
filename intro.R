@@ -327,19 +327,33 @@ write.csv(gsc, "gsc.csv", row.names = TRUE)
 ### annotation:  "org.Hs.eg.db" 
 ### run for each method
 
-## methods_gsva = c( "zscore", "plage")
-methods_gsva = c("plage")
+methods_gsva = c( "plage")
+methods_gsva = c("ssgsea", "zscore","zscore_fisher", "plage", "plage_pca", "plage_tsne", "plage_umap","gsva")
+
+p_value_row = function(x, d_idx){
+  return(t.test(x[1:d_idx], x[d_idx:length(x)])$p.value) 
+}
+
+df_p_vals <- data.frame(matrix(ncol = 2, nrow = dim(ES_GSVA)[1]))
+colnames(df_info) <- c("gene","p_value")
 
 
 for (m in methods_gsva){
+  df_info <- data.frame(matrix(ncol = 4, nrow = 43))
+  colnames(df_info) <- c("p_value", "time","method","ds_number")
   
   for (i in 1:length(geo2kegg)){
     # read from file expression set: rows - enterezID, cols - genes
     file_name <- paste("Results/ds_expr_enterez2/ds_uniq", "_",i,"_e.csv", sep="")
     ds_tmp = read.csv(file_name,check.names=FALSE, row.names=1)
+    df_info$method[i] = m
+    df_info$ds_number[i] = i
+
+    
     # main function
+    start_time <- Sys.time()
     ES_GSVA = gsva(data.matrix(ds_tmp), gsc,
-                   method= c("zscore"),
+                   method= c(m),
                    kcdf=c("Gaussian"),
                    abs.ranking=FALSE,
                    min.sz=1,
@@ -348,11 +362,35 @@ for (m in methods_gsva){
                    mx.diff=TRUE,
                    ssgsea.norm=TRUE,
                    verbose=FALSE)
+    end_time <- Sys.time()
+    total_time = end_time - start_time
+    df_info$time[i] = total_time
+    
+    # make table for p_value for each gene
+#    df_p_vals <- data.frame(matrix(ncol = 2, nrow = dim(ES_GSVA)[1]))
+ #   colnames(df_info) <- c("gene","p_value")
+    
+    d_index = min(which((geo2kegg[[i]]$Group=="d") == TRUE))
+    pval_all=t.test(ES_GSVA[,1:d_index],ES_GSVA[,d_index:length(geo2kegg[[i]]$Group)])$p.value
+    
+    df_info$p_value[i] = pval_all
     # write to apropriate folder
-    file_out <- paste("Results/modifications/plage_pca/ds", "_",i,"_e.csv", sep="")
+    file_out <- paste("Results/all_results/",m,"/ds", "_",i,"_e.csv", sep="")
     write.csv(ES_GSVA, file_out, row.names = TRUE)
+    
+    try({
+      df_p_vals["gene"] = row.names(ES_GSVA)
+      df_p_vals["p_value"] = apply(ES_GSVA,1,p_value_row,d_index)
+      file_p <- paste("Results/all_results/",m,"/ds", "_",i,"p_values.csv", sep="")
+      write.csv(df_p_vals, file_p, row.names = TRUE)
+    })
+
+
   }
+  info_out <- paste("Results/all_results/",m,"/p_vals.csv", sep="")
+  write.csv(df_info, info_out, row.names = TRUE)
 }
+
 
 
 
@@ -460,6 +498,8 @@ colnames(gsva_pval) = ('genes')
 t_test_all_genes <- function(path_f) {
 gsva_pval <- data.frame(matrix(ncol = 1, nrow = 1))
 colnames(gsva_pval) = c('genes')
+
+
 
 for (nset in 1:length(geo2kegg)){
   ##for (nset in 1:2){
